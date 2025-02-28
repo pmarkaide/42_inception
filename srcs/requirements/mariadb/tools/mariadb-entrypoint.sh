@@ -22,7 +22,7 @@ if [ ! -e /var/lib/mysql/.firstmount ]; then
 
     # Wait for the server to be started, then set up database and accounts
     mysqladmin ping -u root --silent --wait >/dev/null 2>/dev/null
-    cat << EOF | mysql --protocol=socket -u root
+    cat << EOF | mysql --protocol=socket -u root -p=
 CREATE DATABASE $MYSQL_DATABASE;
 CREATE USER '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD';
 GRANT ALL PRIVILEGES ON $MYSQL_DATABASE.* TO '$MYSQL_USER'@'%';
