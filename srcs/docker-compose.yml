@@ -7,9 +7,20 @@ services:
     env_file:
       - .env
     volumes:
-      - mariadb_data:/var/lib/mysql
+      - mariadb_data:/home/pmarkaide/data/mysql
     ports:
       - "3306:3306"
 
+  nginx:
+    build: requirements/nginx
+    container_name: nginx
+    env_file:
+      - .env
+    volumes:
+      - nginx_data:/home/pmarkaide/data/nginx
+    ports:
+      - "443:443"
+
 volumes:
-  mariadb_data: /var/lib/mysql
+  mariadb_data:
+  nginx_data:
