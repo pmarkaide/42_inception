@@ -1,5 +1,4 @@
 FROM alpine:3.19.2
-
 RUN apk update && apk add bash curl mariadb-client icu-data-full ghostscript \
         imagemagick openssl php82 php82-fpm php82-phar php82-json php82-mysqli \
         php82-curl php82-dom php82-exif php82-fileinfo php82-pecl-igbinary \
@@ -8,9 +7,23 @@ RUN apk update && apk add bash curl mariadb-client icu-data-full ghostscript \
         php82-xmlreader php82-zlib php82-tokenizer
 RUN cd /usr/local/bin && \
     curl -o wp -L https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && \
-    chmod +x wp
-COPY tools/wordpress-entrypoint.sh /usr/local/bin/
+    chmod +x wp && \
+    mkdir -p /var/www/html && \
+    chown -R nobody:nobody /var/www/html
 
+# Configure PHP-FPM to listen on network and increase memory
+RUN mkdir -p /run/php && \
+    sed -i 's/listen = 127.0.0.1:9000/listen = 9000/g' /etc/php82/php-fpm.d/www.conf && \
+    sed -i 's/;clear_env = no/clear_env = no/g' /etc/php82/php-fpm.d/www.conf
+
+# Give more memory to WordPress - using the correct PHP 8.2 directory
+RUN mkdir -p /etc/php82/conf.d/ && \
+    echo "memory_limit = 512M" > /etc/php82/conf.d/99_memory.ini
+
+COPY tools/wordpress-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/wordpress-entrypoint.sh
+
+# Expose PHP-FPM port
+EXPOSE 9000
 
 ENTRYPOINT [ "wordpress-entrypoint.sh" ]

@@ -10,6 +10,8 @@ services:
       - mariadb_data:/home/pmarkaide/data/mysql
     ports:
       - "3306:3306"
+    networks:
+      - inception_network
 
   nginx:
     build: requirements/nginx
@@ -17,10 +19,33 @@ services:
     env_file:
       - .env
     volumes:
-      - nginx_data:/home/pmarkaide/data/nginx
+      - wordpress_data:/home/pmarkaide/data/wordpress
     ports:
       - "443:443"
+    depends_on:
+      - wordpress
+    networks:
+      - inception_network
+
+  wordpress:
+    build: requirements/wordpress
+    container_name: wordpress
+    env_file:
+      - .env
+    volumes:
+      - wordpress_data:/home/pmarkaide/data/wordpress
+    ports:
+      - "21:21"
+      - "21000-21010:21000-21010"
+    depends_on:
+      - mariadb
+    networks:
+      - inception_network
+
+networks:
+  inception_network:
+    driver: bridge
 
 volumes:
   mariadb_data:
-  nginx_data:
+  wordpress_data:

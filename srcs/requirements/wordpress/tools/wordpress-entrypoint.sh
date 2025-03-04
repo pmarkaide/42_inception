@@ -1,33 +1,72 @@
 #!/bin/bash
 set -e
+
+# Increase PHP memory limit for WP-CLI
+export WP_CLI_PHP_ARGS='-d memory_limit=512M'
+
 cd /var/www/html
 
 # Configure PHP-FPM on the first run
 if [ ! -e /etc/.firstrun ]; then
+    # Make sure PHP-FPM is properly configured
     sed -i 's/listen = 127.0.0.1:9000/listen = 9000/g' /etc/php82/php-fpm.d/www.conf
+
     touch /etc/.firstrun
 fi
 
 # On the first volume mount, download and configure WordPress
 if [ ! -e .firstmount ]; then
-    # Wait for MariaDB to be ready
-    mariadb-admin ping --protocol=tcp --host=mariadb -u "$MYSQL_USER" --password="$MYSQL_PASSWORD" --wait >/dev/null 2>/dev/null
+    # Wait for MariaDB to be ready (with timeout)
+    echo "Waiting for MariaDB..."
+    timeout=180
+    counter=0
+    until mysqladmin ping --protocol=tcp --host=mariadb -u "$MYSQL_USER" --password="$MYSQL_PASSWORD" 2>/dev/null; do
+        counter=$((counter+1))
+        if [ $counter -gt $timeout ]; then
+            echo "Timed out waiting for MariaDB."
+            exit 1
+        fi
+        if [ $((counter % 5)) -eq 0 ]; then
+            echo "Still waiting for MariaDB... ($counter/$timeout seconds)"
+        fi
+        sleep 1
+    done
+    echo "MariaDB is available!"
 
     # Check if WordPress is already installed
     if [ ! -f wp-config.php ]; then
         echo "Installing WordPress..."
 
-        # Download and configure WordPress
-        wp core download --allow-root || true
-        wp config create --allow-root \
-            --dbhost=mariadb \
-            --dbuser="$MYSQL_USER" \
-            --dbpass="$MYSQL_PASSWORD" \
-            --dbname="$MYSQL_DATABASE"
-        wp config set WP_REDIS_HOST redis
-        wp config set WP_REDIS_PORT 6379 --raw
-        wp config set WP_CACHE true --raw
-        wp config set FS_METHOD direct
+        # Manual download and extraction
+        if [ ! -f latest.tar.gz ]; then
+            echo "Downloading WordPress..."
+            curl -O https://wordpress.org/latest.tar.gz
+
+            echo "Extracting WordPress..."
+            tar -xzf latest.tar.gz --strip-components=1
+            rm latest.tar.gz
+        fi
+
+        # Create wp-config.php
+        if [ ! -f wp-config.php ]; then
+            echo "Creating wp-config.php..."
+            cp wp-config-sample.php wp-config.php
+
+            # Update database settings
+            sed -i "s/database_name_here/$MYSQL_DATABASE/g" wp-config.php
+            sed -i "s/username_here/$MYSQL_USER/g" wp-config.php
+            sed -i "s/password_here/$MYSQL_PASSWORD/g" wp-config.php
+            sed -i "s/localhost/mariadb/g" wp-config.php
+
+            # Add additional configuration
+            sed -i "/That's all, stop editing/i define('FS_METHOD', 'direct');" wp-config.php
+
+            # Generate unique keys and salts
+            curl -s https://api.wordpress.org/secret-key/1.1/salt/ >> wp-config.php
+        fi
+
+        # Use wp-cli for database setup
+        echo "Setting up WordPress database..."
         wp core install --allow-root \
             --skip-email \
             --url="$DOMAIN_NAME" \
@@ -36,16 +75,23 @@ if [ ! -e .firstmount ]; then
             --admin_password="$WORDPRESS_ADMIN_PASSWORD" \
             --admin_email="$WORDPRESS_ADMIN_EMAIL"
 
-        # Create a regular user if it doesn't already exist
-        if ! wp user get "$WORDPRESS_USER" --allow-root > /dev/null 2>&1; then
+        # Create a regular user if specified
+        if [ ! -z "$WORDPRESS_USER" ] && [ ! -z "$WORDPRESS_PASSWORD" ] && [ ! -z "$WORDPRESS_EMAIL" ]; then
             wp user create "$WORDPRESS_USER" "$WORDPRESS_EMAIL" --role=author --user_pass="$WORDPRESS_PASSWORD" --allow-root
         fi
     else
         echo "WordPress is already installed."
     fi
-    chmod o+w -R /var/www/html/wp-content
+
+    # Set proper permissions
+    chown -R nobody:nobody /var/www/html
+    chmod -R 755 /var/www/html
+    find /var/www/html -type d -exec chmod 755 {} \;
+    find /var/www/html -type f -exec chmod 644 {} \;
+
     touch .firstmount
 fi
 
-# Start PHP-FPM
+echo "Starting PHP-FPM..."
+# This is the correct command for PHP 8.2 on Alpine
 exec /usr/sbin/php-fpm82 -F
