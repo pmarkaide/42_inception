@@ -8,6 +8,7 @@ cd /var/www/html
 
 # Configure PHP-FPM on the first run
 if [ ! -e /etc/.firstrun ]; then
+    echo "Setting up wordpress for the first time..."
     # Make sure PHP-FPM is properly configured
     sed -i 's/listen = 127.0.0.1:9000/listen = 9000/g' /etc/php82/php-fpm.d/www.conf
 
@@ -18,7 +19,7 @@ fi
 if [ ! -e .firstmount ]; then
     # Wait for MariaDB to be ready (with timeout)
     echo "Waiting for MariaDB..."
-    timeout=180
+    timeout=210
     counter=0
     until mysqladmin ping --protocol=tcp --host=mariadb -u "$MYSQL_USER" --password="$MYSQL_PASSWORD" 2>/dev/null; do
         counter=$((counter+1))
