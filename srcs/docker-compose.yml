@@ -7,7 +7,7 @@ services:
     env_file:
       - .env
     volumes:
-      - /home/pmarkaide/data/maridb:/var/lib/mysql
+      - /home/pmarkaid/data/mariadb:/var/lib/mysql
     ports:
       - "3306:3306"
     networks:
@@ -19,7 +19,7 @@ services:
     env_file:
       - .env
     volumes:
-      - /home/pmarkaide/data/wordpress:/var/www/html
+      - /home/pmarkaid/data/wordpress:/var/www/html
     ports:
       - "443:443"
     depends_on:
@@ -33,7 +33,7 @@ services:
     env_file:
       - .env
     volumes:
-      - /home/pmarkaide/data/wordpress:/var/www/html
+      - /home/pmarkaid/data/wordpress:/var/www/html
     ports:
       - "21:21"
       - "21000-21010:21000-21010"
@@ -45,9 +45,3 @@ services:
 networks:
   inception_network:
     driver: bridge
-
-volumes:
-  mariadb_data:
-    driver: local
-  wordpress_data:
-    driver: local
