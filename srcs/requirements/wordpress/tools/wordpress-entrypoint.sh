@@ -11,6 +11,11 @@ if [ ! -e /etc/.firstrun ]; then
     echo "Setting up wordpress for the first time..."
     # Make sure PHP-FPM is properly configured
     sed -i 's/listen = 127.0.0.1:9000/listen = 9000/g' /etc/php82/php-fpm.d/www.conf
+    sed -i 's/;clear_env = no/clear_env = no/g' /etc/php82/php-fpm.d/www.conf
+
+    # increase memory
+    mkdir -p /etc/php82/conf.d/ && \
+    echo "memory_limit = 512M" > /etc/php82/conf.d/99_memory.ini
 
     touch /etc/.firstrun
 fi
