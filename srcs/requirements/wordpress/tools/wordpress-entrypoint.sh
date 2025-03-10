@@ -11,6 +11,7 @@ if [ ! -e /etc/.firstrun ]; then
     echo "Setting up wordpress for the first time..."
     # Make sure PHP-FPM is properly configured
     sed -i 's/listen = 127.0.0.1:9000/listen = 9000/g' /etc/php82/php-fpm.d/www.conf
+    # Preserve environment variables from the parent process
     sed -i 's/;clear_env = no/clear_env = no/g' /etc/php82/php-fpm.d/www.conf
 
     # increase memory
