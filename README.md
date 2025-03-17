@@ -1,4 +1,7 @@
-# Inception
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ayogun/42-project-badges/refs/heads/main/badges/inceptione.png" alt="inception badge">
+</p>
+
 
 ## Overview
 Inception is a System Administration project at 42 School focused on virtualization using Docker. The project requires setting up a small infrastructure composed of different services under specific rules and using Docker Compose.
