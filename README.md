@@ -45,7 +45,7 @@ inception/
 
 1. Clone the repository
    ```
-   git clone https://github.com/your-username/42_inception.git
+   git clone https://github.com/pmarkaide/42_inception.git
    cd 42_inception
    ```
 
@@ -75,7 +75,7 @@ inception/
    make
    ```
 
-4. Access WordPress at `https://your_domain.42.fr`
+4. Access WordPress at `https://localthost`
 
 ## Available Commands
 
